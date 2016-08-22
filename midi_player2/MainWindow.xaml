@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:midi_player2"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="417.634">
+        Title="MainWindow" Height="513.5" Width="489.333">
     <Grid>
         <Menu x:Name="menu" HorizontalAlignment="Left" Height="19" VerticalAlignment="Top" Width="517">
             <MenuItem Header="File" RenderTransformOrigin="0.596,0.267">
@@ -13,10 +13,18 @@
             </MenuItem>
         </Menu>
         <Label x:Name="midi_file" Content="" HorizontalAlignment="Left" Margin="10,24,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="midi_play_btn" Content="Play" HorizontalAlignment="Left" Margin="158,284,0,0" VerticalAlignment="Top" Width="75" Click="midi_play"/>
-        <Button x:Name="midi_stop_btn" Content="Stop" HorizontalAlignment="Left" Margin="306,284,0,0" VerticalAlignment="Top" Width="75" Click="midi_stop"/>
-        <Button x:Name="midi_play_note_btn" Content="Single Note" HorizontalAlignment="Left" Margin="18,284,0,0" VerticalAlignment="Top" Width="75" Click="midi_signle_note"/>
-        <ComboBox x:Name="track_num" HorizontalAlignment="Left" Margin="18,49,0,0" VerticalAlignment="Top" Width="363"/>
-        <TextBlock x:Name="concent_textbl" HorizontalAlignment="Left" Margin="18,81,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="189" Width="363"/>
+        <Button x:Name="midi_play_btn" Content="Play" HorizontalAlignment="Left" Margin="188,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_play"/>
+        <Button x:Name="midi_stop_btn" Content="Stop" HorizontalAlignment="Left" Margin="347,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_stop"/>
+        <Button x:Name="midi_play_note_btn" Content="Single Note" HorizontalAlignment="Left" Margin="18,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_signle_note"/>
+        <ComboBox x:Name="track_num" HorizontalAlignment="Left" Margin="18,49,0,0" VerticalAlignment="Top" Width="404" SelectionChanged="chenge_track"/>
+        <DataGrid x:Name="mididata_Grid" HorizontalAlignment="Left" Margin="18,86,0,0" VerticalAlignment="Top" RenderTransformOrigin="-1.886,-2.454" Height="355" Width="404" AutoGenerateColumns="False" SelectedCellsChanged="play_tone_on_select" SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#" Binding="{Binding num}"/>
+                <DataGridTextColumn Header="Time" Binding="{Binding v_time}"/>
+                <DataGridTextColumn Header="Note" Binding="{Binding midi_data}"/>
+                <DataGridTextColumn Header="Vel" Binding="{Binding vel_data}"/>
+                <DataGridTextColumn Header="Operation" Binding="{Binding operation}"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Window>

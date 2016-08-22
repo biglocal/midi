@@ -25,6 +25,8 @@ namespace midi_player2
     public partial class MainWindow : Window
     {
         private midi_c midi = new midi_c();
+        private mthd_c mthd;
+        static int play_index = 0;
 
         public MainWindow()
         {
@@ -55,37 +57,23 @@ namespace midi_player2
                 byte[] MThd = new byte[fileStream.Length];
                 midi.len_midi = fileStream.Length;
                 int n = fileStream.Read(MThd, 0, (int)fileStream.Length);
-                mthd_c mthd = new mthd_c(MThd);
+                mthd = new mthd_c(MThd);
                 for (int i = 0; i < mthd.track; i++)
                 {
-                    String purpose = "unknown";
-                    foreach (meta_data_c meta in mthd.mtrk_list[i].meta_data_list)
-                    {
-                        purpose = meta.mtrk_purpose;
-                        if(purpose == "Sequence or track name")
-                        {
-                            purpose = meta.track_name;
-                        }
-                    }
                     track_num.Items.Add("Track:" + (i+1).ToString()+"\t\t(Midi Count:"+ mthd.mtrk_list[i].midi_data_list.Count+ ")");
                 }
-                track_num.SelectedIndex = 2;
-                show_track_notes(mthd.mtrk_list[2]);
+                track_num.SelectedIndex = 1;
+                show_track_notes(mthd.mtrk_list[1]);
                 fileStream.Close();
             }
         }
 
         private void show_track_notes(mtrk_c mtrk)
         {
-            if (mtrk.midi_data_list.Count == 0)
-                concent_textbl.Text = "There is no note information.";
-            else
-            {
-                foreach (midi_data_c midi in mtrk.midi_data_list)
-                {
-                    if(midi.midi_data != null)
-                        concent_textbl.Text += midi.get_note(midi);
-                }
+            
+            if (mtrk.midi_data_list.Count != 0)
+            { 
+                mididata_Grid.ItemsSource = mtrk.midi_data_list;
             }
         }
 
@@ -101,7 +89,29 @@ namespace midi_player2
 
         private void midi_signle_note(object sender, RoutedEventArgs e)
         {
-            midi.Play(0x0060229F);
+            //midi.Play(volumn << 16 | note << 8 | 0x90);
+        }
+
+        private void chenge_track(object sender, SelectionChangedEventArgs e)
+        {
+            var comboBox = sender as ComboBox;
+            int track_num = 0 ;
+
+            track_num = comboBox.SelectedIndex;
+            show_track_notes(mthd.mtrk_list[track_num]);
+        }
+
+        private void midi_signle_note(byte vel, byte note)
+        {
+            midi.Play(vel << 16 | note << 8 | 0x90);
+        }
+
+        private void play_tone_on_select(object sender, SelectedCellsChangedEventArgs e)
+        {
+            DataGrid dg = sender as DataGrid;
+            midi_data_c midi = (midi_data_c)dg.SelectedItems[0];
+            Debug.WriteLine(midi.operation);
+            midi_signle_note(midi.vel_data, midi.midi_data);
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections;
 
 namespace midi_player2
 {
@@ -136,7 +137,7 @@ namespace midi_player2
         public List<meta_data_c> meta_data_list = new List<meta_data_c>();
         public List<midi_data_c> midi_data_list = new List<midi_data_c>();
         public bool is_note_on = false;
-
+        public int midi_num = 0;
         public mtrk_c(byte[] data, int start, int len_of_track)
         {
             byte[] tmp = new byte[4];
@@ -149,58 +150,118 @@ namespace midi_player2
             
             int end_of_track_index = start + len_of_track;
             //Debug.WriteLine("start:" + String.Format("{0:X}", start) + ", end_of_track_index:" + String.Format("{0:X}", end_of_track_index));
-            
+            double time = 0;
             for (int i = start + 8;i < end_of_track_index; i++)
             {
                 if (data[i] > 0x80 && data[i + 1] > 0x80)                   //v_time len is 3 byte
                 {
-                   
+                    time += cal_v_time(data[i], data[i + 1], data[i+2]);
                     if (data[i + 3].CompareTo(meta_data_pattern[1]) == 0)   //v_time+meta_event
                     {
                         i = i + create_meta_data(data, i + 3) + 3;
                     }
                     else if (data[i + 3] >= 0x80)                           //Midi_event
                     {
-                        i = i + create_midi_data(data, i + 3, is_note_on) + 3;
+                        i = i + create_midi_data(data, time, i + 3, is_note_on) + 3;
                     }
                     else if (is_note_on)                                    
                     {
-                        i = i + create_midi_data(data, i + 3, is_note_on) + 3;
+                        i = i + create_midi_data(data, time, i + 3, is_note_on) + 3;
                     }
                 }
                 else if (data[i] > 0x80)                                    //v_time len is 2 byte
                 {
-                   
+                    time += cal_v_time(data[i], data[i+1]);
                     if (data[i + 2].CompareTo(meta_data_pattern[1]) == 0)
                     {
                         i = i + create_meta_data(data, i + 2) + 2;
                     }
                     else if (data[i + 2] >= 0x80)                           //Midi_event
                     {
-                        i = i + create_midi_data(data, i + 2, is_note_on) + 2;
+                        i = i + create_midi_data(data, time, i + 2, is_note_on) + 2;
                     }
                     else if (is_note_on)
                     {
-                        i = i + create_midi_data(data, i + 2, is_note_on) + 2;
+                        i = i + create_midi_data(data, time, i + 2, is_note_on) + 2;
                     }
                 }
                 else                                                       //v_time len is 1 byte
                 {
-                
+                    time += cal_v_time(data[i]);
                     if (data[i + 1].CompareTo(meta_data_pattern[1]) == 0)  //v_time+meta_event
                     {
                         i = i + create_meta_data(data, i + 1) + 1;
                     }
                     else if (data[i + 1] >= 0x80)                           //Midi_event
                     {
-                        i = i + create_midi_data(data, i + 1, is_note_on) + 1;
+                        i = i + create_midi_data(data, time, i + 1, is_note_on) + 1;
                     }
                     else if (is_note_on)
                     {
-                        i = i + create_midi_data(data, i + 1, is_note_on) + 1;
+                        i = i + create_midi_data(data, time, i + 1, is_note_on) + 1;
                     }
                 }
             }
+        }
+
+        private double cal_v_time(byte data)
+        {
+            double v_time = (byte)(data & 0x7F);
+            return v_time;
+        }
+
+        private double cal_v_time(byte data, byte data1)
+        {
+            double v_time = 0;
+            BitArray hsb_byte = new BitArray(new byte[] { data });
+            BitArray lsb_byte = new BitArray(new byte[] { data1 });
+            
+            for (int i = 0; i < 7; i++)
+            {
+                if (lsb_byte[i] == true)
+                {
+                    v_time += Math.Pow(2, i);
+                }
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                if(hsb_byte[i] == true)
+                {
+                    v_time += Math.Pow(2, i+7);
+                }
+            }
+            return v_time;
+        }
+
+        private double cal_v_time(byte data, byte data1, byte data2)
+        {
+            double v_time = 0;
+            BitArray hsb_byte = new BitArray(new byte[] { data });
+            BitArray msb_byte = new BitArray(new byte[] { data1 });
+            BitArray lsb_byte = new BitArray(new byte[] { data2 });
+
+            for (int i = 0; i < 7; i++)
+            {
+                if (lsb_byte[i] == true)
+                {
+                    v_time += Math.Pow(2, i);
+                }
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                if (msb_byte[i] == true)
+                {
+                    v_time += Math.Pow(2, i + 7);
+                }
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                if (hsb_byte[i] == true)
+                {
+                    v_time += Math.Pow(2, i + 14);
+                }
+            }
+            return v_time;
         }
 
         private int create_meta_data(byte[] data, int index)
@@ -211,10 +272,11 @@ namespace midi_player2
             return next_data;
         }
 
-        private int create_midi_data(byte[] data, int index, bool is_note_on)
+        private int create_midi_data(byte[] data, double time, int index, bool is_note_on)
         {
             int next_data = 0;
-            midi_data_c midi = new midi_data_c(data, index, out next_data);
+            midi_num++;
+            midi_data_c midi = new midi_data_c(data, time, index, midi_num, out next_data);
             this.is_note_on = midi.countinues;
             midi_data_list.Add(midi);
             return next_data;
@@ -223,53 +285,73 @@ namespace midi_player2
 
     class midi_data_c
     {
+        public int num { get; }
+        public double v_time { get; }
         public byte status;
-        public byte[] midi_data;                     //1byte or 2byte, its depends on status_byte
+        public byte midi_data { get; }
+        public byte vel_data { get; }
         public bool countinues = false;
-        public midi_data_c(byte[] data, int index, out int offset)
+        public string operation { get; }
+        public midi_data_c(byte[] data, double time, int index, int no, out int offset)
         {
+            num = no;   
             status = data[index];
+            v_time = time;
             //Debug.WriteLine("status: "+String.Format("{0:X}", status)+", index: "+ String.Format("{0:X}", index));
             //2 byte, note on, note off, Polyphonic aftertouch, Control mode change
             if (status >= 0x80 && status <= 0xBF)     
             {
-                midi_data = new byte[2];
-                Array.Copy(data, index + 1, midi_data, 0, 2);
+                midi_data = data[index + 1];
+                vel_data = data[index + 2];
                 offset = 2;
+                operation = "note on";
+                if (status <= 0x80 && status <= 0x8f)
+                {
+                    operation = "note off";
+                }
                 countinues = true;
             }
             //1 byte,Program change, Channel aftertouch
             else if (status >= 0xC0 && status <= 0xDF) 
             {
-                midi_data = new byte[2];
-                Array.Copy(data, index + 1, midi_data, 0, 1);
+                midi_data = data[index + 1];
                 offset = 1;
+                operation = "Program change or Channel aftertouch";
+                
             }
             //2 byte, Pitch wheel range
             else if (status >= 0xE0 && status <= 0xEF) 
             {
-                midi_data = new byte[2];
-                Array.Copy(data, index + 1, midi_data, 0, 2);
+                midi_data = data[index + 1];
+                vel_data = data[index + 2];
                 offset = 2;
             }
             //System Exclusive
             else if (status >= 0xF0)
             {
-                midi_data = null;
+                midi_data = 0;
+                vel_data = 0;
                 offset = 1;
             }
             else // no note on/off status, just use vel to control
             {
-                midi_data = new byte[2];
+                midi_data = data[index];
+                vel_data = data[index + 1];
                 
-                Array.Copy(data, index, midi_data, 0, 2);
                 status = 0x90;
-                if (midi_data[1] == 0x00)
+                operation = "note on";
+                
+                if (vel_data == 0x00)
                 {
                     status = 0x80;
+                    operation = "note off";
                 }
-                countinues = true;
+                if (v_time == 0)
+                {
+                    operation = "controller";
+                }
                 offset = 1;
+                countinues = true;
             }
 
             //if(midi_data != null)
@@ -280,8 +362,9 @@ namespace midi_player2
         {
             if (data.status >= 0x80 && data.status <= 0x9F)
             {
-                Debug.WriteLine("note: "+ midi_data[0]+", vel: " + midi_data[1]);
-                return String.Format("{0:X}", BitConverter.ToString(data.midi_data).Replace("-", " ") + " ");
+                string str = String.Format("{0:D} {1:D} ", Convert.ToInt32(data.midi_data), Convert.ToInt32(data.vel_data));
+                Debug.WriteLine(str);
+                return str;
             }
             else
                 return null;
