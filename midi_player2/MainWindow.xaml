@@ -13,10 +13,10 @@
             </MenuItem>
         </Menu>
         <Label x:Name="midi_file" Content="" HorizontalAlignment="Left" Margin="10,24,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="midi_play_btn" Content="Play" HorizontalAlignment="Left" Margin="188,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_play"/>
+        <Button x:Name="midi_reset_btn" Content="Reset" HorizontalAlignment="Left" Margin="188,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_reset"/>
         <Button x:Name="midi_stop_btn" Content="Stop" HorizontalAlignment="Left" Margin="347,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_stop"/>
         <Button x:Name="midi_play_note_btn" Content="Single Note" HorizontalAlignment="Left" Margin="18,446,0,0" VerticalAlignment="Top" Width="75" Click="midi_signle_note"/>
-        <ComboBox x:Name="track_num" HorizontalAlignment="Left" Margin="18,49,0,0" VerticalAlignment="Top" Width="404" SelectionChanged="chenge_track"/>
+        <ComboBox x:Name="track_num" HorizontalAlignment="Left" Margin="18,49,0,0" VerticalAlignment="Top" Width="404" SelectionChanged="change_track"/>
         <DataGrid x:Name="mididata_Grid" HorizontalAlignment="Left" Margin="18,86,0,0" VerticalAlignment="Top" RenderTransformOrigin="-1.886,-2.454" Height="355" Width="404" AutoGenerateColumns="False" SelectedCellsChanged="play_tone_on_select" SelectionMode="Single">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="#" Binding="{Binding num}"/>
@@ -25,6 +25,13 @@
                 <DataGridTextColumn Header="Vel" Binding="{Binding vel_data}"/>
                 <DataGridTextColumn Header="Operation" Binding="{Binding operation}"/>
             </DataGrid.Columns>
+            <DataGrid.RowStyle >                    
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="LightBlue" />
+                </Style>
+            </DataGrid.RowStyle>
         </DataGrid>
+        <Label x:Name="label" Content="MIDI Dev:" HorizontalAlignment="Left" Margin="295,24,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="num_of_midi_in" Content="0" HorizontalAlignment="Left" Margin="360,24,0,0" VerticalAlignment="Top"/>
     </Grid>
 </Window>

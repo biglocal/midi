@@ -9,21 +9,34 @@ using System.Collections;
 
 namespace midi_player2
 {
-
+    delegate void MidiInProc(int handle, int msg, int instance, int param1, int param2);
     class midi_c
     {
         public String name { get; set; }
         public int num_of_track { get; set; }
         public long len_midi { get; set; }
-
+        public int num_midi_in { get; set; }
         [DllImport("winmm.dll")]
         private extern static int midiOutOpen(out int handle, int uDeviceID, int dwCallback, int dwInstance, int dwFlags);
         [DllImport("winmm.dll")]
         private extern static int midiOutClose(int lphMidiOut);
         [DllImport("winmm.dll")]
         public extern static int midiOutShortMsg(int lphMidiOut, int dwMsg);
+        [DllImport("winmm.dll")]
+        private extern static int midiInGetNumDevs();
+        
+        [DllImport("winmm.dll")]
+        private extern static int midiInOpen(ref int handle, int deviceId, MidiInProc proc, int instance, int flags);
+        [DllImport("winmm.dll")]
+        private static extern int midiInStart(int handle);
+        [DllImport("winmm.dll")]
+        private static extern int midiInClose(int handle);
+        private const int CALLBACK_FUNCTION = 0x30000;
+        public MidiInProc messageHandler = null;
+        private int handle = 0;
+        private int deviceId = 0;
         //[DllImport("winmm.dll")]
-       // static extern Int32 mciSendString(String command, StringBuilder buffer, Int32 bufferSize, IntPtr hwndCallback);
+        // static extern Int32 mciSendString(String command, StringBuilder buffer, Int32 bufferSize, IntPtr hwndCallback);
         public int midiOut;
         public midi_c()
         {
@@ -34,14 +47,31 @@ namespace midi_player2
             {
                 throw new Exception("無法打開MIDI設備");
             }
+            num_midi_in = midiInGetNumDevs();
+            
         }
         ~midi_c()
         {
             if (midiOut != 0)
             {
                 midiOutClose(midiOut);
+                Debug.WriteLine("close midi_out");
+            }
+            if (handle != 0)
+            {
+                midiInClose(handle);
+                Debug.WriteLine("close midi_in");
             }
         }
+        public void initial_midi_in()
+        {
+            if (num_midi_in != 0)
+            {
+                midiInOpen(ref handle, deviceId, messageHandler, 0, CALLBACK_FUNCTION);
+                midiInStart(handle);
+            }
+        }
+        
         /*
         public void playMidi(String fileName, String alias)
         {
@@ -124,7 +154,7 @@ namespace midi_player2
                 }
                 mtrk_c mtrk = new mtrk_c(data, mtrk_offset[i], len);
                 mtrk_list.Add(mtrk);
-                Debug.Write("[Track " + i + "]");
+                //Debug.Write("[Track " + i + "]");
             }
         }
     }
@@ -304,10 +334,14 @@ namespace midi_player2
                 midi_data = data[index + 1];
                 vel_data = data[index + 2];
                 offset = 2;
-                operation = "note on";
+                
                 if (status <= 0x80 && status <= 0x8f)
                 {
                     operation = "note off";
+                }
+                else if (status <= 0x90 && status <= 0x9f)
+                {
+                    operation = "note on";
                 }
                 countinues = true;
             }
@@ -363,7 +397,7 @@ namespace midi_player2
             if (data.status >= 0x80 && data.status <= 0x9F)
             {
                 string str = String.Format("{0:D} {1:D} ", Convert.ToInt32(data.midi_data), Convert.ToInt32(data.vel_data));
-                Debug.WriteLine(str);
+                //Debug.WriteLine(str);
                 return str;
             }
             else
