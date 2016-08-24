@@ -23,13 +23,14 @@ namespace midi_player2
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     /// 
-
-    //delegate void OnMessage(int handle, int msg, int instance, int param1, int param2);
+    
     public partial class MainWindow : Window
     {
+        /****/
         const int MIM_DATA = 0x3C3;
         const int MIM_ERROR = 0x3C5;
         const int MIM_LONGDATA = 0x3C4;
+        /****/
         private midi_c midi = new midi_c();
         private mthd_c mthd;
         static int play_index = 0;
@@ -102,6 +103,7 @@ namespace midi_player2
 
             selected_track_num = comboBox.SelectedIndex;
             show_track_notes(mthd.mtrk_list[selected_track_num]);
+            play_index = 0;
         }
 
         private void midi_signle_note(byte vel, byte note)
@@ -112,6 +114,7 @@ namespace midi_player2
 
         private void play_tone_on_select(object sender, SelectedCellsChangedEventArgs e)
         {
+            return;
             DataGrid dg = sender as DataGrid;
             midi_data_c midi = (midi_data_c)dg.SelectedItems[0];
 
@@ -137,14 +140,21 @@ namespace midi_player2
             if (msg == MIM_DATA || msg == MIM_ERROR || msg == MIM_LONGDATA)
             {
                 byte status = (byte)(param1 & 0x000090);
-                if(status == 0x80)
+                if(status == 0x80)          //note off
                 {
 
                 }
-                else if(status == 0x90)
+                else if(status == 0x90)     //note on
                 {
-                    midi_signle_note(mthd.mtrk_list[selected_track_num].midi_data_list[find_note_index()].vel_data, mthd.mtrk_list[selected_track_num].midi_data_list[find_note_index()].midi_data);
-                    play_index = find_note_index();
+                    int tone = find_note_index();
+
+                    if (tone == -1)
+                    {
+                        play_index = 0;
+                        tone = find_note_index();
+                    }
+                    midi_signle_note(mthd.mtrk_list[selected_track_num].midi_data_list[tone].vel_data, mthd.mtrk_list[selected_track_num].midi_data_list[tone].midi_data);
+                    play_index = tone;
 
 
                     Debug.WriteLine("Play_index:"+ play_index);

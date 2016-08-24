@@ -367,7 +367,8 @@ namespace midi_player2
                 vel_data = 0;
                 offset = 1;
             }
-            else // no note on/off status, just use vel to control
+            // no note on/off status, just use vel to control
+            else
             {
                 midi_data = data[index];
                 vel_data = data[index + 1];
